@@ -1,17 +1,16 @@
-
 # Image Resizer Bot
 
 A Telegram bot for processing square-like images in archives. It resizes them to a 3:4 aspect ratio with a white background.
 
 ## Features
-- Adjusts square-like images to 3:4 format (default 900x1200).
+- Adjusts square-like images to a 3:4 format (default: 900x1200).
 - Adds a white background if necessary.
 - Accepts ZIP and RAR archives.
 - Returns processed images in a ZIP archive.
 
 ## Requirements
-- Python 3.9+
-- Telegram bot token (set in `.env` file or as an environment variable).
+- Python 3.х.
+- Telegram bot token (set via `.env` file or environment variables).
 
 ## Installation
 
@@ -21,20 +20,31 @@ A Telegram bot for processing square-like images in archives. It resizes them to
    git clone https://github.com/akadorkin/image-resizer-bot.git
    cd image-resizer-bot
    ```
-2. Install dependencies:
+2. Create a virtual environment:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-3. Create a `.env` file:
+4. Create a `.env` file with the following content:
    ```plaintext
    BOT_TOKEN=your_telegram_bot_token
    FINAL_WIDTH=900
    FINAL_HEIGHT=1200
    ASPECT_RATIO_TOLERANCE=0.05
    ```
-4. Run the bot:
+5. Run the bot:
    ```bash
    python bot.py
+   ```
+
+6. **Optional: Running in the background**
+   To run the bot in the background, use `nohup`:
+   ```bash
+   nohup python bot.py > bot.log 2>&1 &
    ```
 
 ### Using Docker
@@ -42,14 +52,19 @@ A Telegram bot for processing square-like images in archives. It resizes them to
    ```bash
    docker build -t image-resizer-bot .
    ```
-2. Run the container, for example, if you need to limit memory to 512 megabytes:
+2. Run the container (for example, with a memory limit of 512MB):
    ```bash
-   docker run -d --env-file .env --memory=512m image-resizer-bot 
+   docker run -d --env-file .env --memory=512m image-resizer-bot
+   ```
+
+   If you don't want to use a `.env` file, you can specify variables directly:
+   ```bash
+   docker run -d -e BOT_TOKEN=your_telegram_bot_token -e FINAL_WIDTH=900 -e FINAL_HEIGHT=1200 -e ASPECT_RATIO_TOLERANCE=0.05 image-resizer-bot
    ```
 
 ## Notes
-- `.env` file must not be committed to the repository.
 - Use `.env.example` as a template for your configuration.
+- Ensure that your system has Python 3.х.
 
 ## License
 MIT
