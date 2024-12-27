@@ -6,12 +6,31 @@ services:
     restart: always
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
-      - FINAL_WIDTH=${FINAL_WIDTH}
-      - FINAL_HEIGHT=${FINAL_HEIGHT}
-      - ASPECT_RATIO_TOLERANCE=${ASPECT_RATIO_TOLERANCE}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
     volumes:
       - ./logs:/app/logs
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+
+  worker:
+    build:
+      context: .
+    container_name: celery-worker
+    command: celery -A tasks worker --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 1G

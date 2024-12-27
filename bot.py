@@ -7,6 +7,7 @@ from PIL import Image, ImageOps
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, filters
 from dotenv import load_dotenv
+from tasks import process_archive
 
 # Load environment variables
 load_dotenv()
@@ -14,16 +15,6 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
     raise ValueError("BOT_TOKEN is not set in the environment or .env file.")
-
-# Load aspect ratio tolerance or use default
-ASPECT_RATIO_TOLERANCE = os.getenv("ASPECT_RATIO_TOLERANCE")
-if ASPECT_RATIO_TOLERANCE:
-    try:
-        ASPECT_RATIO_TOLERANCE = float(ASPECT_RATIO_TOLERANCE)
-    except ValueError:
-        raise ValueError("ASPECT_RATIO_TOLERANCE must be a valid float.")
-else:
-    ASPECT_RATIO_TOLERANCE = 0.15  # Default value
 
 # Temporary folder for processing
 TEMP_DIR = "./temp"
@@ -67,8 +58,11 @@ async def handle_archive(update: Update, context: CallbackContext):
     await telegram_file.download_to_drive(archive_path)
 
     extracted_folder = os.path.join(temp_folder, "extracted")
+    processed_folder = os.path.join(temp_folder, "processed")
     os.makedirs(extracted_folder, exist_ok=True)
+    os.makedirs(processed_folder, exist_ok=True)
 
+    # Extract archive
     try:
         if zipfile.is_zipfile(archive_path):
             with zipfile.ZipFile(archive_path, "r") as zf:
@@ -83,47 +77,18 @@ async def handle_archive(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ Error during extraction: {e}")
         return
 
-    processed_folder = os.path.join(temp_folder, "processed")
-    os.makedirs(processed_folder, exist_ok=True)
+    # Send task to Celery
+    task = process_archive.delay(archive_path, extracted_folder, processed_folder)
 
-    success_count = 0
-    error_count = 0
+    await update.message.reply_text(f"Your archive is being processed. Task ID: {task.id}")
 
-    for root, _, files in os.walk(extracted_folder):
-        for file_name in files:
-            try:
-                file_path = os.path.join(root, file_name)
-                if file_name.startswith(".") or not file_name.lower().endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
-                    continue
-
-                with Image.open(file_path) as img:
-                    width, height = img.size
-                    aspect_ratio = width / height
-                    if not (1 - ASPECT_RATIO_TOLERANCE <= aspect_ratio <= 1 + ASPECT_RATIO_TOLERANCE):
-                        error_count += 1
-                        continue
-
-                    stats["images"] += 1
-
-                    # Create image with a white background
-                    new_width = 900
-                    new_height = 1200
-                    new_img = ImageOps.pad(img, (new_width, new_height), color="white")
-
-                    new_file_name = f"_resized_{os.path.splitext(file_name)[0]}.jpg"
-                    new_file_path = os.path.join(processed_folder, new_file_name)
-                    new_img.save(new_file_path, "JPEG", quality=100)
-                    stats["resizes"] += 1
-                    success_count += 1
-            except Exception:
-                error_count += 1
-
-    if success_count == 0:
-        await update.message.reply_text("❌ No suitable images found in the archive.")
-    else:
+    # Wait for result
+    try:
+        result = task.get(timeout=300)
         current_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         result_archive_name = f"processed_{current_date}_{file.file_name}"
         result_archive_path = os.path.join(temp_folder, result_archive_name)
+        
         with zipfile.ZipFile(result_archive_path, "w") as zf:
             for root, _, files in os.walk(processed_folder):
                 for file_name in files:
@@ -134,12 +99,15 @@ async def handle_archive(update: Update, context: CallbackContext):
             document=open(result_archive_path, "rb"),
             caption=(
                 f"✅ Archive <b>{result_archive_name}</b> is ready!\n"
-                f"✔️ Processed images: {success_count}\n"
-                f"❌ Skipped images: {error_count}"
+                f"✔️ Processed images: {result['success']}\n"
+                f"❌ Skipped images: {result['errors']}"
             ),
             parse_mode="HTML"
         )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error during processing: {e}")
 
+    # Cleanup
     for root, dirs, files in os.walk(temp_folder, topdown=False):
         for file in files:
             os.remove(os.path.join(root, file))
