@@ -3,22 +3,26 @@ services:
     build:
       context: .
     container_name: image-resizer-bot
-    restart: always
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
-      - CELERY_BROKER_URL=redis://redis:6379/0
-    depends_on:
-      - redis
+      - FINAL_WIDTH=${FINAL_WIDTH}
+      - FINAL_HEIGHT=${FINAL_HEIGHT}
+      - ASPECT_RATIO_TOLERANCE=${ASPECT_RATIO_TOLERANCE}
     volumes:
       - ./logs:/app/logs
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 256m
+    restart: always
 
   redis:
-    image: redis:latest
+    image: redis:alpine
     container_name: redis
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     restart: always
 
   worker:
@@ -26,11 +30,12 @@ services:
       context: .
     container_name: celery-worker
     command: celery -A tasks worker --loglevel=info
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
       - redis
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 256m
+    restart: always
