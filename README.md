@@ -27,7 +27,7 @@ A Telegram bot for processing square-like images in archives. It resizes them to
    ```
 3. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip3 install -r requirements.txt
    ```
 4. Create a `.env` file with the following content:
    ```plaintext
@@ -38,13 +38,13 @@ A Telegram bot for processing square-like images in archives. It resizes them to
    ```
 5. Run the bot:
    ```bash
-   python bot.py
+   python3 bot.py
    ```
 
 6. **Optional: Running in the background**
    To run the bot in the background, use `nohup`:
    ```bash
-   nohup python bot.py > bot.log 2>&1 &
+   nohup python3 bot.py > bot.log 2>&1 &
    ```
 
 ### Using Docker
