@@ -7,7 +7,7 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch: # Позволяет запускать вручную из интерфейса GitHub
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -21,7 +21,7 @@ jobs:
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
+          username: akadorkin
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             if [ ! -d "${{ secrets.PROJECT_PATH }}" ]; then
@@ -30,15 +30,17 @@ jobs:
             else
               echo "Repository exists. Pulling latest changes..."
               cd ${{ secrets.PROJECT_PATH }}
-              git reset --hard
-              git pull origin main
+              git reset --hard origin/main  # Сбрасываем изменения к удалённой ветке
+              git clean -fd                 # Удаляем любые лишние файлы
+              git fetch --all               # Забираем обновления
+              git pull origin main --force  # Принудительно синхронизируем ветку
             fi
 
       - name: Restart Docker container
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
+          username: akadorkin
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.PROJECT_PATH }}
