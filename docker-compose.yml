@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   bot:
     build:
@@ -8,8 +10,6 @@ services:
     volumes:
       - logs:/app/logs
       - temp:/app/temp
-    ports:
-      - "8443:8443"  # Adjust if your bot listens on a different port
     depends_on:
       - redis
     restart: always
@@ -36,9 +36,6 @@ services:
     restart: always
 
 volumes:
+  redis_data:
+  logs:
   temp:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/temp
