@@ -10,8 +10,20 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
 TOKEN = os.getenv("BOT_TOKEN")
-ASPECT_RATIO_TOLERANCE = float(os.getenv("ASPECT_RATIO_TOLERANCE", 0.15))  # Aspect ratio tolerance from .env
+if not TOKEN:
+    raise ValueError("BOT_TOKEN is not set in the environment or .env file.")
+
+# Load aspect ratio tolerance or use default
+ASPECT_RATIO_TOLERANCE = os.getenv("ASPECT_RATIO_TOLERANCE")
+if ASPECT_RATIO_TOLERANCE:
+    try:
+        ASPECT_RATIO_TOLERANCE = float(ASPECT_RATIO_TOLERANCE)
+    except ValueError:
+        raise ValueError("ASPECT_RATIO_TOLERANCE must be a valid float.")
+else:
+    ASPECT_RATIO_TOLERANCE = 0.15  # Default value
 
 # Temporary folder for processing
 TEMP_DIR = "./temp"
