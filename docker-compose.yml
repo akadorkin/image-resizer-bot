@@ -1,38 +1,36 @@
-version: "3.8"
-
+version: "3.9"
 services:
   bot:
-    build:
-      context: .
+    build: .
     container_name: image-resizer-bot
     env_file:
       - .env
     volumes:
       - temp:/app/temp
-    restart: always
+      - stats:/app/stats
     depends_on:
       - redis
-
-  redis:
-    image: redis:alpine
-    container_name: redis
+      - worker
     restart: always
-    volumes:
-      - redis_data:/data
 
   worker:
-    build:
-      context: .
+    build: .
     container_name: celery-worker
     command: celery -A tasks worker --loglevel=info
     env_file:
       - .env
     volumes:
       - temp:/app/temp
-    restart: always
+      - stats:/app/stats
     depends_on:
       - redis
+    restart: always
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
 
 volumes:
-  redis_data:
   temp:
+  stats:

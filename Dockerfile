@@ -22,8 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Ensure temp directory exists and set permissions
-RUN mkdir -p /app/temp && chown -R celeryuser:celeryuser /app/temp
+# Ensure temp and stats directories exist and set permissions
+RUN mkdir -p /app/temp /app/stats && \
+    chown -R celeryuser:celeryuser /app/temp /app/stats
 
 # Change ownership of the entire /app directory to celeryuser
 RUN chown -R celeryuser:celeryuser /app
