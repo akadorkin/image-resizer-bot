@@ -42,9 +42,9 @@ A Telegram bot for processing square-like images in archives. It resizes them to
    ```bash
    docker build -t image-resizer-bot .
    ```
-2. Run the container:
+2. Run the container, for example, if you need to limit memory to 512 megabytes:
    ```bash
-   docker run -d --env-file .env --memory=512m image-resizer-bot
+   docker run -d --env-file .env --memory=512m image-resizer-bot 
    ```
 
 ## Notes
