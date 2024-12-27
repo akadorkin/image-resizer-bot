@@ -1,34 +1,37 @@
-# Используем официальный Python 3.9 slim образ
+# Use the official Python 3.9 slim image
 FROM python:3.9-slim
 
-# Включаем репозитории contrib и non-free
+# Enable contrib and non-free repositories
 RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free" > /etc/apt/sources.list
 
-# Обновляем список пакетов и устанавливаем необходимые зависимости
+# Update package list and install necessary dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     unrar \
     && rm -rf /var/lib/apt/lists/*
 
-# Создаём пользователя для повышения безопасности
+# Create a user for running the application
 RUN useradd -ms /bin/bash celeryuser
 
-# Устанавливаем рабочую директорию
+# Set working directory
 WORKDIR /app
 
-# Копируем и устанавливаем зависимости
+# Copy and install dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем исходный код бота
+# Copy application code
 COPY . .
 
-# Устанавливаем переменные окружения по умолчанию
+# Set default environment variables
 ENV FINAL_WIDTH=900
 ENV FINAL_HEIGHT=1200
 ENV ASPECT_RATIO_TOLERANCE=0.05
 
-# Переключаемся на созданного пользователя
+# Change ownership of /app to celeryuser
+RUN chown -R celeryuser:celeryuser /app
+
+# Switch to the created user
 USER celeryuser
 
-# Команда для запуска бота
+# Command to run the bot
 CMD ["python", "bot.py"]
