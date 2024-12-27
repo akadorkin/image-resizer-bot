@@ -22,13 +22,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Create and set permissions for the temp directory
+RUN mkdir -p /app/temp && chown -R celeryuser:celeryuser /app/temp
+
+# Change ownership of the entire /app directory to celeryuser
+RUN chown -R celeryuser:celeryuser /app
+
 # Set default environment variables
 ENV FINAL_WIDTH=900
 ENV FINAL_HEIGHT=1200
 ENV ASPECT_RATIO_TOLERANCE=0.05
-
-# Change ownership of /app to celeryuser
-RUN chown -R celeryuser:celeryuser /app
 
 # Switch to the created user
 USER celeryuser

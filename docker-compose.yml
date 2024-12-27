@@ -9,6 +9,9 @@ services:
       - .env
     volumes:
       - ./logs:/app/logs
+      - ./temp:/app/temp  # Mount the temp directory for persistence
+    ports:
+      - "8443:8443"  # Assuming your bot listens on port 8443
     deploy:
       resources:
         limits:
@@ -19,7 +22,9 @@ services:
     image: redis:alpine
     container_name: redis
     ports:
-      - "6379:6379"
+      - "6379:6379"  # Ensure Redis port is exposed
+    volumes:
+      - redis_data:/data  # Use a named volume for Redis data persistence
     deploy:
       resources:
         limits:
@@ -35,8 +40,14 @@ services:
       - redis
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./temp:/app/temp  # Ensure worker also has access to temp
     deploy:
       resources:
         limits:
           memory: 256m
     restart: always
+
+volumes:
+  redis_data:
