@@ -17,35 +17,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Ensure repository exists on server
+      - name: Deploy application
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: akadorkin
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            if [ ! -d "${{ secrets.PROJECT_PATH }}" ]; then
-              echo "Cloning repository..."
-              git clone https://github.com/akadorkin/image-resizer-bot.git ${{ secrets.PROJECT_PATH }}
-            else
-              echo "Repository exists. Pulling latest changes..."
-              cd ${{ secrets.PROJECT_PATH }}
-              git fetch --all
-              git reset --hard origin/main  # Принудительный сброс к удалённой ветке
-            fi
-
-      - name: Restart Docker container
-        uses: appleboy/ssh-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: akadorkin
+          username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.PROJECT_PATH }}
-            if [ ! -f .env ]; then
-              echo "FATAL: .env file is missing!"
-              exit 1
-            fi
-            sudo docker-compose down || true
-            sudo docker-compose up -d --build
+            echo "Pulling latest changes..."
+            git reset --hard
+            git pull origin main
+            echo "Rebuilding and restarting Docker container..."
+            sudo docker-compose build bot
+            sudo docker-compose up -d --no-deps bot
 

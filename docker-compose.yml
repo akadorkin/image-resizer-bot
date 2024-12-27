@@ -1,19 +1,17 @@
-version: "3.8"
-
 services:
   bot:
     build:
       context: .
-      dockerfile: Dockerfile
-      args:
-        GIT_COMMIT: ${GIT_COMMIT:-"unknown"} # Передаём текущий коммит как аргумент сборки
     container_name: image-resizer-bot
-    restart: unless-stopped
-    env_file:
-      - .env # Подключаем переменные окружения
+    restart: always
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - FINAL_WIDTH=${FINAL_WIDTH}
+      - FINAL_HEIGHT=${FINAL_HEIGHT}
+      - ASPECT_RATIO_TOLERANCE=${ASPECT_RATIO_TOLERANCE}
     volumes:
-      - ./temp:/app/temp # Локальная директория для временных файлов
+      - ./logs:/app/logs
     deploy:
       resources:
         limits:
-          memory: 512m # Ограничиваем память
+          memory: 512M
