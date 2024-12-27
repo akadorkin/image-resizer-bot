@@ -1,0 +1,47 @@
+name: Deploy Bot
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Позволяет запускать вручную из интерфейса GitHub
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Ensure repository exists on server
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            if [ ! -d "${{ secrets.PROJECT_PATH }}" ]; then
+              echo "Cloning repository..."
+              git clone https://github.com/akadorkin/image-resizer-bot.git ${{ secrets.PROJECT_PATH }}
+            else
+              echo "Repository exists. Pulling latest changes..."
+              cd ${{ secrets.PROJECT_PATH }}
+              git reset --hard
+              git pull origin main
+            fi
+
+      - name: Restart Docker container
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.PROJECT_PATH }}
+            sudo docker-compose down || true
+            sudo docker-compose up -d --build
+

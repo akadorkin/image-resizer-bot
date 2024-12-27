@@ -1,0 +1,11 @@
+.venv/
+tests/.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+temp/
+dist/
+build/
+.env.test
+.venv-test/
