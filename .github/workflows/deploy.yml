@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -14,10 +11,19 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Deploy application
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: .
+          target: ${{ secrets.PROJECT_PATH }}
+
+      - name: Update Docker container
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -25,10 +31,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.PROJECT_PATH }}
-            echo "Pulling latest changes..."
-            git reset --hard
-            git pull origin main
-            echo "Rebuilding and restarting Docker container..."
-            sudo docker-compose build bot
-            sudo docker-compose up -d --no-deps bot
+            docker-compose pull  # Обновление образов
+            docker-compose up -d --build  # Перезапуск с пересборкой
 

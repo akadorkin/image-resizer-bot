@@ -31,7 +31,8 @@ async def start(update: Update, context: CallbackContext):
         "✅ <b>Supported formats:</b> JPG, PNG, WEBP, GIF.\n"
         "❌ <b>Ignored:</b> Videos and hidden files (starting with a dot).\n"
         "📦 <b>Maximum archive size:</b> 20 MB.\n"
-        "🔗 <b>Source code available on GitHub: https://github.com/akadorkin/image-resizer-bot</b>"
+        "🔗 Source code available on GitHub: https://github.com/akadorkin/image-resizer-bot"
+
     )
     reply_markup = ReplyKeyboardMarkup([["Upload Archive"]], resize_keyboard=True)
     await update.message.reply_text(
