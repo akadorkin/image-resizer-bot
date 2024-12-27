@@ -14,23 +14,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Copy files to server
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: .
-          target: ${{ secrets.PROJECT_PATH }}
-
-      - name: Update Docker container
+      - name: Deploy to server
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            if [ ! -d "${{ secrets.PROJECT_PATH }}" ]; then
+              echo "Cloning repository..."
+              git clone https://github.com/akadorkin/image-resizer-bot.git ${{ secrets.PROJECT_PATH }}
+            else
+              echo "Repository exists. Pulling latest changes..."
+              cd ${{ secrets.PROJECT_PATH }}
+              git reset --hard
+              git pull origin main
+            fi
             cd ${{ secrets.PROJECT_PATH }}
-            docker-compose pull  # Обновление образов
-            docker-compose up -d --build  # Перезапуск с пересборкой
+            docker-compose pull
+            docker-compose up -d
 
