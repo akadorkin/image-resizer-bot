@@ -10,6 +10,12 @@ from celery import Celery
 
 from tasks import process_archive
 
+TEMP_DIR = "./temp"
+os.makedirs(TEMP_DIR, exist_ok=True)
+
+if not os.access(TEMP_DIR, os.W_OK):
+    raise PermissionError(f"Cannot write to temporary directory: {TEMP_DIR}")
+
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
@@ -106,6 +112,8 @@ def main():
     application.add_handler(CommandHandler("stats", stats_command))
 
     application.run_polling()
+
+
 
 if __name__ == "__main__":
     main()
