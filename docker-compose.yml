@@ -1,13 +1,12 @@
+version: '3.8'
+
 services:
   bot:
     build:
       context: .
     container_name: image-resizer-bot
-    environment:
-      - BOT_TOKEN=${BOT_TOKEN}
-      - FINAL_WIDTH=${FINAL_WIDTH}
-      - FINAL_HEIGHT=${FINAL_HEIGHT}
-      - ASPECT_RATIO_TOLERANCE=${ASPECT_RATIO_TOLERANCE}
+    env_file:
+      - .env
     volumes:
       - ./logs:/app/logs
     deploy:
@@ -32,8 +31,8 @@ services:
     command: celery -A tasks worker --loglevel=info
     depends_on:
       - redis
-    environment:
-      - BOT_TOKEN=${BOT_TOKEN}
+    env_file:
+      - .env
     deploy:
       resources:
         limits:
