@@ -30,10 +30,8 @@ jobs:
             else
               echo "Repository exists. Pulling latest changes..."
               cd ${{ secrets.PROJECT_PATH }}
-              git reset --hard origin/main  # Сбрасываем изменения к удалённой ветке
-              git clean -fd                 # Удаляем любые лишние файлы
-              git fetch --all               # Забираем обновления
-              git pull origin main --force  # Принудительно синхронизируем ветку
+              git fetch --all
+              git reset --hard origin/main  # Принудительный сброс к удалённой ветке
             fi
 
       - name: Restart Docker container
@@ -44,6 +42,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.PROJECT_PATH }}
+            if [ ! -f .env ]; then
+              echo "FATAL: .env file is missing!"
+              exit 1
+            fi
             sudo docker-compose down || true
             sudo docker-compose up -d --build
 
