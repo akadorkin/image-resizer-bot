@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.8"
 
 services:
   bot:
@@ -8,34 +8,31 @@ services:
     env_file:
       - .env
     volumes:
-      - logs:/app/logs
       - temp:/app/temp
+    restart: always
     depends_on:
       - redis
-    restart: always
 
   redis:
     image: redis:alpine
     container_name: redis
+    restart: always
     volumes:
       - redis_data:/data
-    restart: always
 
   worker:
     build:
       context: .
     container_name: celery-worker
     command: celery -A tasks worker --loglevel=info
-    depends_on:
-      - redis
     env_file:
       - .env
     volumes:
-      - logs:/app/logs
       - temp:/app/temp
     restart: always
+    depends_on:
+      - redis
 
 volumes:
   redis_data:
-  logs:
   temp:
