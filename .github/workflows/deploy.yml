@@ -21,6 +21,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Check if the project directory exists
             if [ ! -d "${{ secrets.PROJECT_PATH }}" ]; then
               echo "Cloning repository..."
               git clone https://github.com/akadorkin/image-resizer-bot.git ${{ secrets.PROJECT_PATH }}
@@ -30,7 +31,11 @@ jobs:
               git reset --hard
               git pull origin main
             fi
+
+            # Navigate to the project directory
             cd ${{ secrets.PROJECT_PATH }}
+
+            # Update Docker images and restart containers
             docker-compose pull
             docker-compose up -d
 
