@@ -1,36 +1,39 @@
 import os
 import zipfile
 import rarfile
+import uuid
+from datetime import datetime
 from PIL import Image, ImageOps
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, filters
-import uuid
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-FINAL_WIDTH = int(os.getenv("FINAL_WIDTH", 900))
-FINAL_HEIGHT = int(os.getenv("FINAL_HEIGHT", 1200))
-ASPECT_RATIO_TOLERANCE = float(os.getenv("ASPECT_RATIO_TOLERANCE", 0.05))
+ASPECT_RATIO_TOLERANCE = float(os.getenv("ASPECT_RATIO_TOLERANCE", 0.15))  # Aspect ratio tolerance from .env
 
 # Temporary folder for processing
 TEMP_DIR = "./temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-# Statistics dictionary
+# Stats dictionary
 stats = {"users": set(), "archives": 0, "images": 0, "resizes": 0}
 
 async def start(update: Update, context: CallbackContext):
     instructions = (
-        "👋 Hi! I'm an image processing bot.\n"
-        "📁 Please upload a ZIP or RAR archive containing square-like images.\n"
-        "🖼️ I'll resize them to 3:4 aspect ratio (default 900×1200) and add a white background.\n"
-        "📦 Maximum archive size: 20 MB.\n"
-        "🔗 Source code: https://github.com/akadorkin/image-resizer-bot"
+        "👋 <b>Welcome!</b> I am a bot for processing images.\n"
+        "📁 <b>How to use:</b> Upload a ZIP or RAR archive containing images.\n"
+        "🖼️ I will resize them to 3×4 format (900×1200) with a white background.\n"
+        "✅ <b>Supported formats:</b> JPG, PNG, WEBP, GIF.\n"
+        "❌ <b>Ignored:</b> Videos and hidden files (starting with a dot).\n"
+        "📦 <b>Maximum archive size:</b> 20 MB.\n"
+        "🔗 <b>Source code available on GitHub:</b> <a href='https://github.com/akadorkin/image-resizer-bot'>Image Resizer Bot</a>"
     )
     reply_markup = ReplyKeyboardMarkup([["Upload Archive"]], resize_keyboard=True)
-    await update.message.reply_text(instructions, reply_markup=reply_markup, disable_web_page_preview=True)
+    await update.message.reply_text(
+        instructions, reply_markup=reply_markup, disable_web_page_preview=True, parse_mode="HTML"
+    )
 
 async def handle_archive(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
@@ -39,8 +42,10 @@ async def handle_archive(update: Update, context: CallbackContext):
 
     file = update.message.document
     if file.file_size > 20 * 1024 * 1024:
-        await update.message.reply_text("❌ File exceeds the maximum size of 20 MB.")
+        await update.message.reply_text("❌ File size exceeds the 20 MB limit.")
         return
+
+    await update.message.reply_text(f"📂 Archive received: <b>{file.file_name}</b>. Processing started...", parse_mode="HTML")
 
     temp_folder = os.path.join(TEMP_DIR, str(uuid.uuid4()))
     os.makedirs(temp_folder, exist_ok=True)
@@ -51,6 +56,7 @@ async def handle_archive(update: Update, context: CallbackContext):
 
     extracted_folder = os.path.join(temp_folder, "extracted")
     os.makedirs(extracted_folder, exist_ok=True)
+
     try:
         if zipfile.is_zipfile(archive_path):
             with zipfile.ZipFile(archive_path, "r") as zf:
@@ -71,23 +77,28 @@ async def handle_archive(update: Update, context: CallbackContext):
     success_count = 0
     error_count = 0
 
-    def is_approximately_square(width, height, tolerance):
-        return abs(width - height) / max(width, height) <= tolerance
-
     for root, _, files in os.walk(extracted_folder):
         for file_name in files:
             try:
                 file_path = os.path.join(root, file_name)
+                if file_name.startswith(".") or not file_name.lower().endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
+                    continue
+
                 with Image.open(file_path) as img:
-                    if not is_approximately_square(img.size[0], img.size[1], ASPECT_RATIO_TOLERANCE):
+                    width, height = img.size
+                    aspect_ratio = width / height
+                    if not (1 - ASPECT_RATIO_TOLERANCE <= aspect_ratio <= 1 + ASPECT_RATIO_TOLERANCE):
                         error_count += 1
                         continue
 
                     stats["images"] += 1
 
-                    new_img = ImageOps.pad(img, (FINAL_WIDTH, FINAL_HEIGHT), color="white")
+                    # Create image with a white background
+                    new_width = 900
+                    new_height = 1200
+                    new_img = ImageOps.pad(img, (new_width, new_height), color="white")
 
-                    new_file_name = f"resized_{os.path.splitext(file_name)[0]}.jpg"
+                    new_file_name = f"_resized_{os.path.splitext(file_name)[0]}.jpg"
                     new_file_path = os.path.join(processed_folder, new_file_name)
                     new_img.save(new_file_path, "JPEG", quality=100)
                     stats["resizes"] += 1
@@ -98,7 +109,9 @@ async def handle_archive(update: Update, context: CallbackContext):
     if success_count == 0:
         await update.message.reply_text("❌ No suitable images found in the archive.")
     else:
-        result_archive_path = os.path.join(temp_folder, "result.zip")
+        current_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        result_archive_name = f"processed_{current_date}_{file.file_name}"
+        result_archive_path = os.path.join(temp_folder, result_archive_name)
         with zipfile.ZipFile(result_archive_path, "w") as zf:
             for root, _, files in os.walk(processed_folder):
                 for file_name in files:
@@ -107,7 +120,12 @@ async def handle_archive(update: Update, context: CallbackContext):
 
         await update.message.reply_document(
             document=open(result_archive_path, "rb"),
-            caption=f"✅ Done! Processed: {success_count} files. Failed: {error_count}.",
+            caption=(
+                f"✅ Archive <b>{result_archive_name}</b> is ready!\n"
+                f"✔️ Processed images: {success_count}\n"
+                f"❌ Skipped images: {error_count}"
+            ),
+            parse_mode="HTML"
         )
 
     for root, dirs, files in os.walk(temp_folder, topdown=False):
@@ -119,11 +137,11 @@ async def handle_archive(update: Update, context: CallbackContext):
 
 async def stats_command(update: Update, context: CallbackContext):
     stats_message = (
-        f"📊 Bot Statistics:\n"
+        f"📊 Bot statistics:\n"
         f"👤 Unique users: {len(stats['users'])}\n"
-        f"📦 Archives processed: {stats['archives']}\n"
-        f"🖼️ Images processed: {stats['images']}\n"
-        f"✂️ Images resized: {stats['resizes']}"
+        f"📦 Processed archives: {stats['archives']}\n"
+        f"🖼️ Processed images: {stats['images']}\n"
+        f"✂️ Resized images: {stats['resizes']}"
     )
     await update.message.reply_text(stats_message)
 
