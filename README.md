@@ -7,9 +7,9 @@
 ## 🚀 Features
 
 - **Archive Processing:** Upload ZIP or RAR archives containing multiple images and receive a resized version.
-- **Individual Image Resizing:** Send images as documents (JPG, PNG, WEBP, GIF) and get them resized instantly.
+- **Individual Image Resizing:** Send images as documents (JPG, PNG, WEBP) and get them resized instantly.
 - **Aspect Ratio Preservation:** Resizes images from **1×1** to **3×4 (900×1200)** while maintaining the original aspect ratio with a white background.
-- **Supported Formats:** JPG, PNG, WEBP, GIF.
+- **Supported Formats:** JPG, PNG, WEBP.
 - **User-Friendly Commands:** Simple `/start` command to get started and `/stats` command to view statistics.
 - **Dockerized Deployment:** Easily deploy and manage the bot using Docker and Docker Compose.
 - **Robust Error Handling:** Informative messages guide you through any issues during processing.
