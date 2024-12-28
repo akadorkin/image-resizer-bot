@@ -4,7 +4,7 @@ FROM python:3.9-slim
 # Enable contrib and non-free repositories
 RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free" > /etc/apt/sources.list
 
-# Update package list and install necessary dependencies
+# Install necessary dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     unrar \
     && rm -rf /var/lib/apt/lists/*
@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Ensure temp and stats directories exist and set permissions
+# **Ensure temp and stats directories exist and set permissions**
 RUN mkdir -p /app/temp /app/stats && \
     chown -R celeryuser:celeryuser /app/temp /app/stats
 
