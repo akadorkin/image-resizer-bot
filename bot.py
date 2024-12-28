@@ -129,7 +129,9 @@ async def handle_archive(update: Update, context):
                 filename=os.path.basename(processed_archive_path),
                 caption=(
                     f"✅ <b>Processing Complete.</b>\n"
-                    f"⏱️ <b>Execution Time:</b> {elapsed_time:.2f} seconds"
+                    f"⏱️ <b>Execution Time:</b> {elapsed_time:.2f} seconds\n"
+                    f"🖼️ <b>Images Resized:</b> {success}\n"
+                    f"❌ <b>Images Skipped:</b> {errors}"
                 ),
                 parse_mode="HTML"
             )
