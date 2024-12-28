@@ -117,10 +117,10 @@ Send the `/start` command to your bot in Telegram to receive instructions.
 ### 📁 Processing Archives
 
 - **Send a ZIP or RAR Archive:**  
-  Upload a ZIP or RAR archive containing your images as a document.
+  Upload a ZIP or RAR archive containing your images as a document or images.
 
 - **Receive Resized Archive:**  
-  The bot will process the archive and return a new archive with resized images.
+  The bot will process the archive and return a new archive with resized images or files with images.
 
 ### 🖼️ Processing Individual Images
 
