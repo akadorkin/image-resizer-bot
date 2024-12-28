@@ -9,6 +9,7 @@ import time
 import shutil
 import requests
 import json
+from filelock import FileLock
 
 # **Logging Configuration**
 logging.basicConfig(
@@ -36,26 +37,31 @@ TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 # **Directories and Files Paths**
 STATS_DIR = "/app/stats"
 STATS_FILE = os.path.join(STATS_DIR, "stats.json")
+STATS_LOCK_FILE = STATS_FILE + ".lock"
 
-# **Statistics Management**
+# **Statistics Management with File Locking**
 def load_stats():
-    if not os.path.exists(STATS_FILE):
-        stats = {
-            "users": [],
-            "archives": 0,
-            "images": 0,
-            "resizes": 0,
-            "top_archives": []
-        }
-        save_stats(stats)
-    else:
-        with open(STATS_FILE, "r", encoding="utf-8") as f:
-            stats = json.load(f)
+    lock = FileLock(STATS_LOCK_FILE)
+    with lock:
+        if not os.path.exists(STATS_FILE):
+            stats = {
+                "users": [],
+                "archives": 0,
+                "images": 0,
+                "resizes": 0,
+                "top_archives": []
+            }
+            save_stats(stats)
+        else:
+            with open(STATS_FILE, "r", encoding="utf-8") as f:
+                stats = json.load(f)
     return stats
 
 def save_stats(stats):
-    with open(STATS_FILE, "w", encoding="utf-8") as f:
-        json.dump(stats, f, ensure_ascii=False, indent=4)
+    lock = FileLock(STATS_LOCK_FILE)
+    with lock:
+        with open(STATS_FILE, "w", encoding="utf-8") as f:
+            json.dump(stats, f, ensure_ascii=False, indent=4)
 
 # **Function to Send Messages**
 def send_message(chat_id, text):
@@ -93,6 +99,7 @@ def process_archive_task(archive_path, final_width, final_height, aspect_ratio_t
 
     success_count = 0
     error_count = 0
+    total_images_in_archive = 0
     archive_size = 0
 
     try:
@@ -119,6 +126,7 @@ def process_archive_task(archive_path, final_width, final_height, aspect_ratio_t
                     logger.info(f"Ignoring file {file_name} in folder {root}")
                     continue
                 if file_name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')):
+                    total_images_in_archive += 1  # **Count as Image Processed**
                     image_path = os.path.join(root, file_name)
                     try:
                         with Image.open(image_path) as img:
@@ -163,7 +171,8 @@ def process_archive_task(archive_path, final_width, final_height, aspect_ratio_t
             logger.info(f"No resized images created for archive {archive_path}")
 
         # **Update Statistics**
-        stats["resizes"] += success_count
+        stats["images"] += total_images_in_archive  # **Total Images Processed**
+        stats["resizes"] += success_count  # **Images Resized**
 
         if processed_archive_path and archive_size > 0:
             stats["top_archives"].append({
@@ -171,7 +180,7 @@ def process_archive_task(archive_path, final_width, final_height, aspect_ratio_t
                 "size": archive_size,
                 "time": round(time.time() - start_time, 2)  # Execution time in seconds
             })
-            # **Sort Top Archives by Size**
+            # **Sort Top Archives by Size Descending**
             stats["top_archives"] = sorted(stats["top_archives"], key=lambda x: x["size"], reverse=True)[:3]
 
         save_stats(stats)
@@ -227,10 +236,13 @@ def process_images_task(user_id, image_paths, final_width, final_height, aspect_
 
         start_time = time.time()
         try:
-            with Image.open(path) as img:
+            with Image.open(image_path) as img:
                 width, height = img.size
                 aspect_ratio = width / height
                 logger.info(f"Processing image {image_path} with aspect ratio {aspect_ratio:.2f}")
+
+                # **Count as Image Processed**
+                stats["images"] += 1
 
                 if not (1 - aspect_ratio_tolerance <= aspect_ratio <= 1 + aspect_ratio_tolerance):
                     logger.info(f"Image {image_path} does not meet the required aspect ratio.")
