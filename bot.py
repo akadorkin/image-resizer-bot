@@ -62,7 +62,7 @@ async def start(update: Update, context):
         "<b>👋 Welcome!</b> I am an image resizing bot.\n\n"
         "📁 <b>How to Use:</b>\n"
         "1️⃣ Send a <b>ZIP</b> or <b>RAR</b> archive containing images.\n"
-        "2️⃣ Send individual images as <b>documents</b> (JPG, PNG, WEBP, GIF).\n"
+        "2️⃣ Send individual images as <b>documents</b> (JPG, PNG, WEBP).\n"
         "I will resize the images from <b>1×1</b> to <b>3×4 (900×1200)</b> with a white background.\n"
         "✅ <b>Supported Formats:</b> <b>JPG</b>, <b>PNG</b>, <b>WEBP</b>.\n"
         "❌ <b>Ignored:</b> Videos and hidden files (starting with a dot).\n"
