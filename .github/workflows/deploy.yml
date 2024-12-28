@@ -43,4 +43,3 @@ jobs:
             # Restart containers
             echo "Starting updated containers..."
             docker-compose up -d
-
